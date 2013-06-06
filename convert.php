@@ -7,8 +7,9 @@
  * To change this template use File | Settings | File Templates.
  */
 
-foreach (glob('.php') as $file) {
+foreach (glob('*.php') as $file) {
 
+    $amount = 0;
     $content = file_get_contents($file);
 
     //выбираем те файлы, которые не utf-8
@@ -21,7 +22,7 @@ foreach (glob('.php') as $file) {
                 continue;
             }
             //если есть русские символы, выходим из цикла
-            if ( preg_match( '/[А-Яа-я]/', $sString ) ) {
+            if ( preg_match( '/[А-Яа-я]/', $sType ) ) {
 
                 $flag = true;
                 break;
@@ -32,9 +33,11 @@ foreach (glob('.php') as $file) {
             else {
                 $content = iconv( 'windows-1251', 'UTF-8', $content );
                 $file = file_put_contents( $file, $content );
+                $amount++;
             }
 
         }
 
     }
+    echo $amount;
 }
