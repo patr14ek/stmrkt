@@ -49,7 +49,7 @@ foreach ( glob( '*.php' ) as $file ){
             else{
 
                 $content = iconv( 'windows-1251', 'UTF-8', $content );
-                $file = file_put_contents( $file, $content );
+                file_put_contents( $file, $content );
 
             }
 
