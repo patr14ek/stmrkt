@@ -21,41 +21,88 @@ function detectEncoding( $string )
     return null;
 }
 
-foreach ( glob( '*.php' ) as $file ){
+function changeEncoding( $path )
+{
 
-    $content = file_get_contents( $file );
+    $flag = 0;
+    $amount = 0;
+    foreach ( glob( $path . '/*.php' ) as $file ){
 
-    //выбираем те файлы, которые не utf-8
-    if ( detectEncoding( $content ) == 'windows-1251' ){
+        $content = file_get_contents( $file );
 
-        $lexem = token_get_all( $content );
-        foreach ( $lexem as $sType => $sString ){
+        //выбираем те файлы, которые не utf-8
+        if ( detectEncoding( $content ) == 'windows-1251' ){
 
-            if ( $sType == T_INLINE_HTML ){
+            $lexem = token_get_all( $content );
+            foreach ( $lexem as $sType => $sString ){
 
-                continue;
-            }
-            //если есть русские символы, выходим из цикла
-            if ( preg_match( '/[А-Яа-я]/', $sType ) ){
+                if ( $sType == T_INLINE_HTML ){
 
-                $flag = true;
-                break;
-            }
 
-            if ( $flag ){
+                    //если есть русские символы, выходим из цикла
+                    if ( preg_match( '/[А-Яа-я]/', $sType ) ){
 
-                continue;
-            }
-            else{
+                        $flag = true;
+                        break;
+                    }
 
-                $content = iconv( 'windows-1251', 'UTF-8', $content );
-                file_put_contents( $file, $content );
+                    if ( $flag ){
+
+                        continue;
+                    } else{
+
+                        $content = iconv( 'windows-1251', 'UTF-8', $content );
+                        file_put_contents( $file, $content );
+                        $amount++;
+                        echo "File " . $file . " converted" . "\n";
+                    }
+                }
 
             }
 
         }
+        global $files_count;
+        $files_count++;
+    }
+
+    echo $amount;
+
+}
+
+function recursiveSearch( $path )
+{
+    $local_path = "$path";
+
+    $dir = opendir( $path ); // открываем папку
+    changeEncoding( $path ); // выполняем преобразование в текущей папке
+
+    while ( false !== ( $entry = readdir( $dir ) ) ){
+        $test_file = "$local_path/$entry";
+
+        // какая-то наркомания, но на php.net написано, что надо так перебирать файлы
+        if ( is_dir( $test_file ) ){ // если папка, то выполнить эту же функцию в этой папке
+            if ( $entry != ".." && $entry != '.' ){ // выводятся ещё и "." с "..", их игнорить
+                echo "\n";
+                echo "$test_file\n";
+                echo "-----------\n";
+                recursiveSearch( $test_file );
+                global $folders_count;
+                $folders_count++;
+
+            }
+        }
 
     }
 
+    closedir( $dir ); // закрываем папку
 }
+
+$files_count = 0;
+$folders_count = 0;
+// отправляем в функцию первоначальную папку (текущую)
+recursiveSearch( '.' );
+echo "\n";
+echo "Files passed: $files_count\n";
+echo "Folders passed: $folders_count\n";
+
 
