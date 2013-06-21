@@ -7,6 +7,10 @@
  * To change this template use File | Settings | File Templates.
  */
 
+$comments_pattern = '/(\/\*).*?(\*\/)|(\/\/).*?(\n)|(<!--).*?(-->)/s';
+$language_pattern = '/[а-яА-ЯёЁ]/s';
+
+
 //используем функцию для определения кодировки
 function detectEncoding( $string )
 {
@@ -23,9 +27,8 @@ function detectEncoding( $string )
 
 function changeEncoding( $path )
 {
-
-    $flag = 0;
     $amount = 0;
+
     foreach ( glob( $path . '/*.php' ) as $file ){
 
         $content = file_get_contents( $file );
@@ -33,32 +36,55 @@ function changeEncoding( $path )
         //выбираем те файлы, которые не utf-8
         if ( detectEncoding( $content ) == 'windows-1251' ){
 
-            $lexem = token_get_all( $content );
-            foreach ( $lexem as $sType => $sString ){
+            global $comments_pattern;
+            global $language_pattern;
 
-                if ( $sType == T_INLINE_HTML ){
+            echo "$file ... ";
 
+            // убираем все комментарии из контента и записываем в новую переменную
+            $content_without_comments = preg_replace( $comments_pattern, "\n", $content );
 
-                    //если есть русские символы, выходим из цикла
-                    if ( preg_match( '/[А-Яа-я]/', $sType ) ){
+            // проверяем наличие русских букв в контенте без комментов. если они есть, то возвращается 1, если нет - 0
+            if( preg_match( $language_pattern, $content_without_comments ) == 1 ) {
 
-                        $flag = true;
-                        break;
-                    }
+                $content = iconv( 'windows-1251', 'UTF-8', $content );
+                file_put_contents( $file, $content );
+                $amount++;
 
-                    if ( $flag ){
+                echo "converted\n";
 
-                        continue;
-                    } else{
+            } else {
+                echo "passed\n";
 
-                        $content = iconv( 'windows-1251', 'UTF-8', $content );
-                        file_put_contents( $file, $content );
-                        $amount++;
-                        echo "File " . $file . " converted" . "\n";
-                    }
-                }
-
+                break;
             }
+
+//            $lexem = token_get_all( $content );
+//            foreach ( $lexem as $sType => $sString ){
+//
+//                if ( $sType == T_INLINE_HTML ){
+//
+//
+//                    // если есть русские символы, выходим из цикла
+//                    if ( preg_match( '/[А-Яа-я]/', $sType ) ){
+//
+//                        $flag = true;
+//                        break;
+//                    }
+//
+//                    if ( $flag ){
+//
+//                        continue;
+//                    } else{
+//
+//                        $content = iconv( 'windows-1251', 'UTF-8', $content );
+//                        file_put_contents( $file, $content );
+//                        $amount++;
+//                        echo "File " . $file . " converted" . "\n";
+//                    }
+//                }
+//
+//            }
 
         }
         global $files_count;
